@@ -8,6 +8,7 @@ black = "*"
 numpy = "*"
 sklearn = "*"
 scikit-learn = "*"
+pytest = "*"
 
 [dev-packages]
 

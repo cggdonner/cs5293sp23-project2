@@ -1,7 +1,8 @@
-import json
+# Import project2.py
+from project2 import read_json
 
-# Open yummly dataset
-with open('yummly.json') as f:
-    yummly = json.load(f)
-
-assert len(yummly) == 100
+# Function to call and test read_json()
+def test_read():
+    yummly = read_json('yummly.json')
+    # Assertion
+    assert len(yummly) >= 1

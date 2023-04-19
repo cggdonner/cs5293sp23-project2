@@ -11,146 +11,89 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import normalize
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-    
-# Arguments to be put in terminal command using argparse
-parser = argparse.ArgumentParser(description="Cluster recipes given ingredients")
-parser.add_argument("--N", type=int, help="Number of closest cuisines")
-parser.add_argument("--ingredient", type=str, nargs="+", help="Input ingredient")
-args = parser.parse_args()
     
 # Open and read in yummly.json
-with open('yummly.json') as f:
-    yummly = json.load(f)
+def read_json(filename):
+    with open(filename) as f:
+        return json.load(f)
 
 # Preprocess yummly dataset and input ingredients in preparation for vectorization
-all_ingredients = [', '.join(recipe['ingredients']) for recipe in yummly]
-input_ingredients = ', '.join(args.ingredient)
-# Using preprocessing
-#all_cuisines = [recipe['cuisine'] for recipe in yummly]
+def preprocess_dataset(dataset):
+    all_ingredients = set()
+    for recipe in dataset:
+        for ingredient in recipe['ingredients']:
+            all_ingredients.add(ingredient)
+    return list(all_ingredients)
+
+def preprocess_input(all_ingredients, ingredients):
+    input_ingredients = {}
+    for ingredient in ingredients:
+        if ingredient in all_ingredients:
+            if ingredient in input_ingredients:
+                input_ingredients[ingredient] += 1
+            else:
+                input_ingredients[ingredient] = 1
+    return ', '.join([f'{k} ({v})' for k, v in input_ingredients.items()])
 
 # Split the data into testing and training sets
-X_train, X_test = train_test_split(all_ingredients, test_size=0.2, random_state=42)
-
-# Label encoding an training sets
-#le = LabelEncoder()
-#y_train = le.fit_transform(all_cuisines)
-
-# Split the data into testing and training sets
-#X_train, X_test, y_train, y_test = train_test_split(all_ingredients, y_train, test_size=0.2, random_state=42)
+def train_split_data(X):
+    X_train, X_test = train_test_split(X, test_size=0.2, random_state=42)
+    return X_train, X_test
 
 # Vectorize and normalize training set and input ingredients
-cv = CountVectorizer()
-X_train = cv.fit_transform(all_ingredients)
-X_train_norm = normalize(X_train)
-
-# Vectorize input ingredients
-input_vec = cv.transform([input_ingredients])
-input_vec_norm = normalize(input_vec)
+def vectorize_data(X):
+    cv = CountVectorizer()
+    X_vec = cv.fit_transform(X)
+    X_vec_norm = normalize(X_vec)
+    return cv, X_vec_norm
 
 # Train k-means model
-kmeans = KMeans(n_clusters=len(set([recipe['cuisine'] for recipe in yummly])), n_init='auto')
-#kmeans = KMeans(n_clusters=len(set(all_cuisines)), n_init='auto')
-kmeans.fit(X_train_norm)
-
-# Print silhouette score for verification of model performance
-from sklearn.metrics import silhouette_score
-silhouette = silhouette_score(X_train_norm, kmeans.labels_)
-print("Silhouette score:", silhouette)
+def train_kmeans(X, num_clusters):
+    kmeans = KMeans(n_clusters=num_clusters, n_init='auto')
+    kmeans.fit(X)
+    return kmeans
 
 # Predict closest cuisine and n-closest cuisines
-input_cluster = kmeans.predict(input_vec_norm)[0]
-cluster_centers = kmeans.cluster_centers_
-cosine_similarities = cosine_similarity(input_vec_norm, cluster_centers)[0]
-top_cuisines = cosine_similarities.argsort()[::-1][:args.N]
+def predict_cuisines(kmeans, input_vec_norm, n_closest_cuisines, dataset):
+    input_cluster = kmeans.predict(input_vec_norm)[0]
+    cluster_centers = kmeans.cluster_centers_
+    cosine_similarities = cosine_similarity(input_vec_norm, cluster_centers)[0]
+    top_cuisines = cosine_similarities.argsort()[::-1][:n_closest_cuisines]
 
-# Prepare output in JSON format
-output = {}
-output['cuisine'] = yummly[kmeans.labels_[input_cluster]]['cuisine']
-#output['cuisine'] = le.inverse_transform(np.atleast_1d(kmeans.labels_[input_cluster]))
-output['score'] = cosine_similarities[input_cluster]
-output['closest'] = []
-for i in top_cuisines:
-    closest = {}
-    closest['id'] = yummly[kmeans.labels_[i]]['id']
-    closest['score'] = cosine_similarities[i]
-    output['closest'].append(closest)
+    # Prepare output in JSON format
+    output = {}
+    output['cuisine'] = dataset[kmeans.labels_[input_cluster]]['cuisine']
+    output['score'] = cosine_similarities[input_cluster]
+    output['closest'] = []
+    for i in top_cuisines:
+        closest = {}
+        closest['id'] = dataset[kmeans.labels_[i]]['id']
+        closest['score'] = cosine_similarities[i]
+        output['closest'].append(closest)
+    return output
 
-# Print output
-print(json.dumps(output, indent=2))
+# Main function to call all previous functions and return output
+def main(args):
+    yummly = read_json('yummly.json')
+    all_ingredients = preprocess_dataset(yummly)
+    input_ingredients = preprocess_input(all_ingredients, args.ingredient)
+    print(all_ingredients)
+    print(input_ingredients)
+    X_train, X_test = train_split_data(all_ingredients)
+    cv, X_train_norm = vectorize_data(X_train)
+    input_vec = cv.transform([input_ingredients])
+    input_vec_norm = normalize(input_vec)
+    kmeans = train_kmeans(X_train_norm, len(set([recipe['cuisine'] for recipe in yummly])))
+    output = predict_cuisines(kmeans, input_vec_norm, args.N, yummly)
+    # Print output
+    print(json.dumps(output, indent=2))
 
-# Vectorize the yummly.json dataset using CountVectorizer
-# This converts the ingredients to vectors
-#cv = CountVectorizer()
-#X = cv.fit_transform([', '.join(recipe['ingredients']) for recipe in yummly])
-# Then scale the matrix data
-#X_normalized = normalize(X)
-#print(X_normalized)
-
-# Split normalized data into train and test sets
-#X_train, X_test = train_test_split(X_normalized, test_size=0.2, random_state=42)
-
-# Fit KMeans model on the training data
-#kmeans = KMeans(n_clusters=args.N, n_init=10, random_state=42).fit(X_train)
-
-# Predict clusters for the test data
-#test_clusters = kmeans.predict(X_test)
-
-# Use the k-means model/search index to find the top-N closest cuisines
-#closest_indices = []
-#for i in range(args.N):
-#    indices = np.argsort(cosine_similarity(X_normalized, kmeans.cluster_centers_)[::,i])[::-1]
-#    closest_indices.append(indices[:args.N])
-
-# Use cosine similarity to calculate similarity score between recipe and cluster center
-#cosine = cosine_similarity(X_normalized, kmeans.cluster_centers_)
-
-# Define the output to be returned in the terminal (will be in dictionary format)
-#output = {}
-
-# Then populate the output with closest cuisines
-#for i in range(args.N):
-#    n_closest_cuisine = [] # Initialize list to store strictly N-number of ids and scores
-#    indices = np.argsort(cosine[:, i])[::-1][:args.N] # Get indices of top-N recipes based on cosine similarity to cluster center i
-#    for j, index in enumerate(indices):
-#        recipe = yummly[index]
-#        n_closest_cuisine.append({
-#            'id': recipe['id'],
-#            'score': round(cosine[index, i], 2)
-#        })
-    # Sort N-closest recipes by descending score
-#    n_closest_cuisine = sorted(n_closest_cuisine, key=lambda x: x['score'], reverse=True)[:args.N]
-
-#    output[i] = {
-#        'cuisine': yummly[indices[0]]['cuisine'], # use the recipe of the first index from indices (highest similarity score)
-#        'score': round(cosine_similarity(kmeans.cluster_centers_[i].reshape(1, -1), X_normalized)[0][0], 2),
-#        'closest': n_closest_cuisine
-#    }
-
-# Convert cluster index to cuisine name
-#cuisine_names = kmeans.predict(X_normalized)
-#cuisine_labels = kmeans.labels_
-#cuisine_names_unique = np.unique(cuisine_names)
-#cuisine_labels_unique = np.unique(cuisine_labels)
-#cuisine_names_dict = {}
-#for cuisine_name in cuisine_names_unique:
-#    cuisine_names_dict[cuisine_name] = yummly[cuisine_labels_unique[cuisine_name]]['cuisine']
-
-# Create final output dictionary
-#final_output = {
-#    'cuisine': cuisine_names_dict[cuisine_names[0]],
-#    'score': round(cosine_similarity(kmeans.cluster_centers_[cuisine_names[0]].reshape(1, -1), X_normalized)[0][0], 2),
-#    'closest': []
-#}
-#for i, closest_cuisine in enumerate(output[cuisine_names[0]]['closest']):
-#    final_output['closest'].append({
-#        'id': closest_cuisine['id'],
-#        'score': closest_cuisine['score']
-#    })
-
-# Sort N-closest recipes by descending score
-#n_closest_cuisine = sorted(n_closest_cuisine, key=lambda x: x['score'], reverse=True)[:args.N]
-# Print the final output in json format
-#print(json.dumps(final_output, indent=4))
+# Argparser to include terminal arguments into main
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Cluster recipes given ingredients")
+    parser.add_argument("--N", type=int, help="Number of closest cuisines")
+    parser.add_argument("--ingredient", type=str, action='append', help="Input ingredient")
+    args = parser.parse_args()
+    main(args)
 
 
