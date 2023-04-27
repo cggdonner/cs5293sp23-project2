@@ -9,6 +9,7 @@ numpy = "*"
 sklearn = "*"
 scikit-learn = "*"
 pytest = "*"
+pandas = "*"
 
 [dev-packages]
 

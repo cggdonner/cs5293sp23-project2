@@ -2,13 +2,13 @@ Collaborators for Project 2:
 
 Programiz | https://www.programiz.com/python-programming/json | Reading and writing json files
 LearnByExample | https://www.learnbyexample.org/python-string-join-method/ | Join method for concatenating ingredients
-W3Schools | https://www.w3schools.com/python/python_ref_set.asp | Set methods
 Scikit-Learn | https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html | Train_test_split documentation
-Scikit-Learn | https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html | Count Vectorizer documentation
-DigitalOcean | https://www.digitalocean.com/community/tutorials/normalize-data-in-python | Normalize function to normalize training data
-Scikit-Learn | https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html | KMeans model documentation
-Python Data Science Handbook | https://jakevdp.github.io/PythonDataScienceHandbook/05.11-k-means.html | KMeans cluster_centers_ and predict methods
 Scikit-Learn | https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.cosine_similarity.html | Cosine_similarity documentation
 Machine Learning Mastery | https://machinelearningmastery.com/save-load-machine-learning-models-python-scikit-learn/ | Pickle package to save model
+Mehreen Habib | Mehreen.Habib-1@ou.edu | Suggested the use of pandas dataframe for easier training
+Scikit-Learn | https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html | TfidfVectorizer documenation
+Scikit-Learn | https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#examples-using-sklearn-neighbors-kneighborsclassifier | KNeighborsClassifier documentation
+StackOverflow | https://stackoverflow.com/questions/16486252/is-it-possible-to-use-argsort-in-descending-order | Helped with sorting the n-closest cuisines in descending order
+Note: Jasmine advised me to use Tfidf Vectorizer in combination with K-Nearest Neighbors for better modeling, which is why I changed my original modelling approach (KMeans with CountVectorizer)
  
 
